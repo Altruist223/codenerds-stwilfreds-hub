@@ -106,7 +106,38 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
+}
 
+@layer utilities {
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+  
+  .gradient-primary {
+    @apply bg-gradient-to-r from-primary to-accent;
+  }
+  
+  .tech-border {
+    @apply border border-border/50 hover:border-accent/50 transition-colors;
+  }
+  
+  .tech-glow {
+    @apply shadow-lg shadow-accent/20 border-accent/50;
+  }
+  
+  .card-glow {
+    @apply shadow-lg shadow-primary/20 border-primary/50;
+  }
+  
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@layer base {
   body {
     @apply bg-background text-foreground;
     background: var(--gradient-bg);

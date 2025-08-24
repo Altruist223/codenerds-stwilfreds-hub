@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Code } from "lucide-react";
+import { Menu, X, Code, Settings } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const navItems = [
     { href: "#about", label: "About" },
@@ -11,6 +14,13 @@ const Navigation = () => {
     { href: "#leadership", label: "Leadership" },
     { href: "#contact", label: "Contact" },
   ];
+
+  const pageNavItems = [
+    { href: "/events", label: "Events" },
+    { href: "/members", label: "Members" },
+  ];
+
+  const isHomePage = location.pathname === "/";
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -28,18 +38,49 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            {navItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="text-muted-foreground hover:text-accent transition-colors font-medium"
-              >
-                {item.label}
-              </a>
-            ))}
-            <Button size="sm" className="bg-gradient-primary hover:opacity-90">
+            {isHomePage ? (
+              // Home page navigation (anchor links)
+              <>
+                {navItems.map((item) => (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    className="text-muted-foreground hover:text-accent transition-colors font-medium"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </>
+            ) : (
+              // Other pages navigation (router links)
+              <>
+                {pageNavItems.map((item) => (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    className="text-muted-foreground hover:text-accent transition-colors font-medium"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+                <a
+                  href="/"
+                  className="text-muted-foreground hover:text-accent transition-colors font-medium"
+                >
+                  Home
+                </a>
+              </>
+            )}
+            
+            <Button 
+              size="sm" 
+              className="bg-gradient-primary hover:opacity-90"
+              onClick={() => navigate('/join')}
+            >
               Join Now
             </Button>
+            
+            
           </div>
 
           {/* Mobile Menu Button */}
@@ -59,19 +100,55 @@ const Navigation = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
             <div className="flex flex-col gap-4">
-              {navItems.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="text-muted-foreground hover:text-accent transition-colors font-medium py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.label}
-                </a>
-              ))}
-              <Button size="sm" className="bg-gradient-primary hover:opacity-90 w-fit">
-                Join Now
-              </Button>
+              {isHomePage ? (
+                // Home page navigation (anchor links)
+                <>
+                  {navItems.map((item) => (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      className="text-muted-foreground hover:text-accent transition-colors font-medium py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                </>
+              ) : (
+                // Other pages navigation (router links)
+                <>
+                  {pageNavItems.map((item) => (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      className="text-muted-foreground hover:text-accent transition-colors font-medium py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                  <a
+                    href="/"
+                    className="text-muted-foreground hover:text-accent transition-colors font-medium py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Home
+                  </a>
+                </>
+              )}
+              
+                             <Button 
+                 size="sm" 
+                 className="bg-gradient-primary hover:opacity-90 w-fit"
+                 onClick={() => {
+                   navigate('/join');
+                   setIsMenuOpen(false);
+                 }}
+               >
+                 Join Now
+               </Button>
+              
+              
             </div>
           </div>
         )}

@@ -1,42 +1,22 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, MapPin, ArrowRight } from "lucide-react";
+import { Event, getEvents } from "@/lib/data";
+import { useNavigate } from "react-router-dom";
 
 const Activities = () => {
-  const activities = [
-    {
-      title: "Weekly Coding Workshops",
-      description: "Intensive sessions covering popular programming languages and frameworks like React, Python, and Node.js.",
-      frequency: "Every Saturday",
-      time: "2:00 PM - 5:00 PM",
-      location: "Computer Lab 1",
-      tags: ["Beginner Friendly", "Hands-on"]
-    },
-    {
-      title: "Hackathon Events",
-      description: "24-48 hour coding marathons where teams compete to build innovative solutions to real-world problems.",
-      frequency: "Monthly",
-      time: "Weekend",
-      location: "Main Auditorium",
-      tags: ["Competition", "Team Work"]
-    },
-    {
-      title: "Tech Talks & Guest Lectures",
-      description: "Industry experts and alumni share insights on latest technologies, career guidance, and industry trends.",
-      frequency: "Bi-weekly",
-      time: "4:00 PM - 6:00 PM",
-      location: "Seminar Hall",
-      tags: ["Learning", "Networking"]
-    },
-    {
-      title: "Project Showcase",
-      description: "Members present their innovative projects and get feedback from peers and faculty mentors.",
-      frequency: "End of Semester",
-      time: "Full Day Event",
-      location: "Exhibition Hall",
-      tags: ["Innovation", "Presentation"]
-    }
-  ];
+  const [activities, setActivities] = useState<Event[]>([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setActivities(getEvents());
+  }, []);
+
+  const handleViewAllEvents = () => {
+    navigate('/events');
+  };
 
   return (
     <section className="py-20 px-6 bg-secondary/30">
@@ -88,6 +68,18 @@ const Activities = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* View All Events Button */}
+        <div className="text-center mt-12">
+          <Button 
+            onClick={handleViewAllEvents}
+            size="lg" 
+            className="bg-gradient-primary hover:opacity-90 text-lg px-8 py-3"
+          >
+            View All Events
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
       </div>
     </section>

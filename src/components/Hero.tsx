@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-bg.jpg";
 
 const Hero = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -32,10 +35,19 @@ const Hero = () => {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Button size="lg" className="bg-gradient-primary hover:opacity-90 transition-opacity text-lg px-8 py-3">
+          <Button 
+            size="lg" 
+            className="bg-gradient-primary hover:opacity-90 transition-opacity text-lg px-8 py-3"
+            onClick={() => navigate('/join')}
+          >
             Join the Club
           </Button>
-          <Button variant="outline" size="lg" className="border-accent text-accent hover:bg-accent hover:text-accent-foreground text-lg px-8 py-3">
+          <Button 
+            variant="outline" 
+            size="lg" 
+            className="border-accent text-accent hover:bg-accent hover:text-accent-foreground text-lg px-8 py-3"
+            onClick={() => navigate('/events')}
+          >
             View Events
           </Button>
         </div>

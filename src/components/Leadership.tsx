@@ -1,42 +1,22 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Github, Linkedin, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Github, Linkedin, Mail, ArrowRight } from "lucide-react";
+import { Member, getMembers } from "@/lib/data";
+import { useNavigate } from "react-router-dom";
 
 const Leadership = () => {
-  const leaders = [
-    {
-      name: "Alex Johnson",
-      role: "President",
-      department: "Computer Science Engineering",
-      year: "Final Year",
-      skills: ["Full Stack Development", "AI/ML", "Leadership"],
-      description: "Passionate about creating innovative solutions and building a strong tech community."
-    },
-    {
-      name: "Priya Sharma",
-      role: "Vice President",
-      department: "Information Technology",
-      year: "Third Year",
-      skills: ["Web Development", "UI/UX Design", "Project Management"],
-      description: "Focused on organizing impactful events and fostering collaborative learning."
-    },
-    {
-      name: "Rahul Patel",
-      role: "Technical Lead",
-      department: "Computer Science Engineering",
-      year: "Final Year",
-      skills: ["Backend Development", "DevOps", "Mentoring"],
-      description: "Dedicated to technical excellence and helping members grow their coding skills."
-    },
-    {
-      name: "Sarah Ahmed",
-      role: "Events Coordinator",
-      department: "Information Technology",
-      year: "Third Year",
-      skills: ["Event Planning", "Marketing", "Communication"],
-      description: "Expert at organizing hackathons and tech talks that inspire and educate."
-    }
-  ];
+  const [leaders, setLeaders] = useState<Member[]>([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setLeaders(getMembers());
+  }, []);
+
+  const handleViewAllMembers = () => {
+    navigate('/members');
+  };
 
   return (
     <section className="py-20 px-6">
@@ -83,19 +63,37 @@ const Leadership = () => {
 
                 {/* Social Links */}
                 <div className="flex justify-center gap-3">
-                  <div className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
-                    <Github className="w-4 h-4" />
-                  </div>
-                  <div className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
-                    <Linkedin className="w-4 h-4" />
-                  </div>
-                  <div className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
-                    <Mail className="w-4 h-4" />
-                  </div>
+                  {leader.social?.github && (
+                    <div className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+                      <Github className="w-4 h-4" />
+                    </div>
+                  )}
+                  {leader.social?.linkedin && (
+                    <div className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+                      <Linkedin className="w-4 h-4" />
+                    </div>
+                  )}
+                  {leader.social?.email && (
+                    <div className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+                      <Mail className="w-4 h-4" />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* View All Members Button */}
+        <div className="text-center mt-12">
+          <Button 
+            onClick={handleViewAllMembers}
+            size="lg" 
+            className="bg-gradient-primary hover:opacity-90 text-lg px-8 py-3"
+          >
+            View All Members
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
       </div>
     </section>
