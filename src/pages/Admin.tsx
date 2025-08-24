@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar, Clock, MapPin, Users, Plus, Edit, Trash2, Save, X, Home, UserPlus, FileText, Settings } from "lucide-react";
 import { Event, Member, getEvents, getMembers, saveEvents, saveMembers } from "@/lib/data";
@@ -981,9 +982,13 @@ const Admin = () => {
                     Cancel
                   </Button>
                   <Button onClick={async () => {
+                    if (editingApplication.status === 'pending') {
+                      toast({ title: "Cannot update", description: "Cannot update status to pending. Please select approved or rejected.", variant: "destructive" });
+                      return;
+                    }
                     const result = await joinApplicationService.updateJoinApplicationStatus(
                       editingApplication.id,
-                      editingApplication.status,
+                      editingApplication.status as 'approved' | 'rejected',
                       editingApplication.notes
                     );
                     if (result.success) {
