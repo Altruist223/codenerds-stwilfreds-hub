@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, MapPin, Phone, Clock, Send, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { emailService, fallbackEmailService, ContactFormData } from "@/lib/api";
+import { ContactFormData } from "@/lib/api";
 
 const Contact = () => {
   const [formData, setFormData] = useState<ContactFormData>({
@@ -39,45 +39,27 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      // Try to send email via backend first
-      const result = await emailService.sendContactEmail(formData);
+      // Create mailto link for contact form
+      const mailtoLink = `mailto:codenerdsswpg@gmail.com?subject=${encodeURIComponent(formData.subject || 'Contact from Code Nerds')}&body=${encodeURIComponent(
+        `Name: ${formData.firstName} ${formData.lastName}\nEmail: ${formData.email}\nDepartment: ${formData.department}\n\nMessage:\n${formData.message}`
+      )}`;
       
-      if (result.success) {
-        toast({
-          title: "Email Sent!",
-          description: result.message,
-        });
-        
-        // Reset form
-        setFormData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          department: "",
-          message: ""
-        });
-      } else {
-        // Fallback to mailto if backend fails
-        const fallbackResult = fallbackEmailService.sendContactEmail(formData);
-        
-        if (fallbackResult.success) {
-          toast({
-            title: "Email Client Opened",
-            description: fallbackResult.message,
-          });
-          
-          // Reset form
-          setFormData({
-            firstName: "",
-            lastName: "",
-            email: "",
-            department: "",
-            message: ""
-          });
-        } else {
-          throw new Error(fallbackResult.message);
-        }
-      }
+      // Open default email client
+      window.open(mailtoLink, '_blank');
+      
+      toast({
+        title: "Email Client Opened",
+        description: "Your email client has opened with the message. Please send it manually.",
+      });
+      
+      // Reset form
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        department: "",
+        message: ""
+      });
 
     } catch (error) {
       toast({

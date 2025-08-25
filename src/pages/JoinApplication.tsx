@@ -9,7 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { joinApplicationService, fallbackEmailService, JoinApplicationData } from "@/lib/api";
+import { submitJoinApplication } from "@/lib/firebase";
+import { JoinApplicationData } from "@/lib/api";
 
 const JoinApplication = () => {
   const [formData, setFormData] = useState<JoinApplicationData>({
@@ -84,13 +85,13 @@ const JoinApplication = () => {
     setIsSubmitting(true);
 
     try {
-      // Try to submit via backend first
-      const result = await joinApplicationService.submitJoinApplication(formData);
+      // Submit via Firebase
+      const result = await submitJoinApplication(formData);
       
       if (result.success) {
         toast({
           title: "Application Submitted!",
-          description: result.message,
+          description: "Your application has been submitted successfully and will be reviewed by our team.",
         });
         
         // Reset form
@@ -115,39 +116,7 @@ const JoinApplication = () => {
           agreeToCodeOfConduct: false
         });
       } else {
-        // Fallback to email if backend fails
-        const fallbackResult = fallbackEmailService.sendJoinApplicationEmail(formData);
-        
-        if (fallbackResult.success) {
-          toast({
-            title: "Application Prepared!",
-            description: fallbackResult.message,
-          });
-          
-          // Reset form
-          setFormData({
-            firstName: "",
-            lastName: "",
-            email: "",
-            phone: "",
-            studentId: "",
-            department: "",
-            year: "",
-            semester: "",
-            skills: [],
-            experience: "",
-            motivation: "",
-            expectations: "",
-            availability: "",
-            github: "",
-            linkedin: "",
-            portfolio: "",
-            agreeToTerms: false,
-            agreeToCodeOfConduct: false
-          });
-        } else {
-          throw new Error(fallbackResult.message);
-        }
+        throw new Error(result.error || "Failed to submit application");
       }
 
     } catch (error) {

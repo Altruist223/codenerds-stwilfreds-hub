@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Github, Linkedin, Mail, Search, Users, ArrowRight } from "lucide-react";
-import { Member, getMembers } from "@/lib/data";
+import { Member } from "@/lib/data";
+import { getMembers } from "@/lib/firebase";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
@@ -16,9 +17,15 @@ const Members = () => {
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
 
   useEffect(() => {
-    const allMembers = getMembers();
-    setMembers(allMembers);
-    setFilteredMembers(allMembers);
+    const loadMembers = async () => {
+      const result = await getMembers();
+      if (result.success) {
+        const allMembers = result.members as Member[];
+        setMembers(allMembers);
+        setFilteredMembers(allMembers);
+      }
+    };
+    loadMembers();
   }, []);
 
   useEffect(() => {
@@ -253,13 +260,14 @@ const Members = () => {
                         )}
                       </div>
 
-                      <Button 
-                        variant="outline" 
-                        className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                      >
-                        View Profile
-                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                      </Button>
+                                             <Button 
+                         variant="outline" 
+                         className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                         onClick={() => navigate('/join')}
+                       >
+                         Register Now
+                         <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                       </Button>
                     </CardContent>
                   </Card>
                 ))}

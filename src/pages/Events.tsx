@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar, Clock, MapPin, Search, Filter, ArrowRight } from "lucide-react";
-import { Event, getEvents } from "@/lib/data";
+import { Event } from "@/lib/data";
+import { getEvents } from "@/lib/firebase";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useNavigate } from "react-router-dom";
@@ -18,9 +19,15 @@ const Events = () => {
   const [eventType, setEventType] = useState<"all" | "upcoming" | "past">("all");
 
   useEffect(() => {
-    const allEvents = getEvents();
-    setEvents(allEvents);
-    setFilteredEvents(allEvents);
+    const loadEvents = async () => {
+      const result = await getEvents();
+      if (result.success) {
+        const allEvents = result.events as Event[];
+        setEvents(allEvents);
+        setFilteredEvents(allEvents);
+      }
+    };
+    loadEvents();
   }, []);
 
   useEffect(() => {
@@ -265,13 +272,21 @@ const Events = () => {
                       </div>
                       
                       <div className="pt-4 border-t border-border">
-                        <Button 
-                          variant="outline" 
-                          className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                        >
-                          Learn More
-                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Button>
+                                                 <Button 
+                           variant="outline" 
+                           className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                           onClick={() => {
+                             if (event.registrationLink) {
+                               window.open(event.registrationLink, '_blank');
+                             } else {
+                               // Fallback to join page if no registration link
+                               navigate('/join');
+                             }
+                           }}
+                         >
+                           Register Now
+                           <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                         </Button>
                       </div>
                     </CardContent>
                   </Card>

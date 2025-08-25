@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Github, Linkedin, Mail, ArrowRight } from "lucide-react";
-import { Member, getMembers } from "@/lib/data";
+import { Member } from "@/lib/data";
+import { getMembers } from "@/lib/firebase";
 import { useNavigate } from "react-router-dom";
 
 const Leadership = () => {
@@ -11,7 +12,13 @@ const Leadership = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setLeaders(getMembers());
+    const loadMembers = async () => {
+      const result = await getMembers();
+      if (result.success) {
+        setLeaders(result.members as Member[]);
+      }
+    };
+    loadMembers();
   }, []);
 
   const handleViewAllMembers = () => {

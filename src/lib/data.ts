@@ -8,6 +8,7 @@ export interface Event {
   tags: string[];
   date?: string;
   image?: string;
+  registrationLink?: string;
 }
 
 export interface Member {

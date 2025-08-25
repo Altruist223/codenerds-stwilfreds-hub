@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, MapPin, ArrowRight } from "lucide-react";
-import { Event, getEvents } from "@/lib/data";
+import { Event } from "@/lib/data";
+import { getEvents } from "@/lib/firebase";
 import { useNavigate } from "react-router-dom";
 
 const Activities = () => {
@@ -11,7 +12,13 @@ const Activities = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setActivities(getEvents());
+    const loadEvents = async () => {
+      const result = await getEvents();
+      if (result.success) {
+        setActivities(result.events as Event[]);
+      }
+    };
+    loadEvents();
   }, []);
 
   const handleViewAllEvents = () => {
@@ -64,6 +71,25 @@ const Activities = () => {
                     <MapPin className="w-4 h-4 text-accent" />
                     <span>{activity.location}</span>
                   </div>
+                </div>
+                
+                {/* Register Now Button */}
+                <div className="pt-4 border-t border-border">
+                  <Button 
+                    variant="outline" 
+                    className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                    onClick={() => {
+                      if (activity.registrationLink) {
+                        window.open(activity.registrationLink, '_blank');
+                      } else {
+                        // Fallback to join page if no registration link
+                        navigate('/join');
+                      }
+                    }}
+                  >
+                    Register Now
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>

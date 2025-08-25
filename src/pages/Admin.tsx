@@ -7,12 +7,34 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, Clock, MapPin, Users, Plus, Edit, Trash2, Save, X, Home, UserPlus, FileText, Settings } from "lucide-react";
-import { Event, Member, getEvents, getMembers, saveEvents, saveMembers } from "@/lib/data";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Calendar, Clock, MapPin, Users, Plus, Edit, Trash2, Save, X, Home, UserPlus, FileText, Settings, Lock, Loader2, CheckCircle } from "lucide-react";
+import { Event, Member } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { userService, joinApplicationService, User, JoinApplication } from "@/lib/api";
+import { 
+  getUsers, 
+  createUser, 
+  updateUser, 
+  deleteUser, 
+  getJoinApplications, 
+  getApprovedApplications,
+  getPendingApplications,
+  updateJoinApplicationStatus, 
+  deleteJoinApplication,
+  signOutUser,
+  getEvents,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  getMembers,
+  createMember,
+  updateMember,
+  deleteMember,
+  testFirebaseConnection
+} from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
+import { User, JoinApplication } from "@/lib/api";
 
 const Admin = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -24,41 +46,155 @@ const Admin = () => {
   const [activeTab, setActiveTab] = useState("events");
   const [users, setUsers] = useState<User[]>([]);
   const [joinApplications, setJoinApplications] = useState<JoinApplication[]>([]);
+  const [approvedApplications, setApprovedApplications] = useState<JoinApplication[]>([]);
+  const [pendingApplications, setPendingApplications] = useState<JoinApplication[]>([]);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editingApplication, setEditingApplication] = useState<JoinApplication | null>(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOutUser();
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of the admin dashboard.",
+      });
+      navigate('/admin/login');
+    } catch (error) {
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
-    setEvents(getEvents());
-    setMembers(getMembers());
-    loadUsers();
-    loadJoinApplications();
+    const initializeData = async () => {
+      setLoading(true);
+      try {
+        // Test Firebase connection first
+        console.log('Testing Firebase connection...');
+        const connectionTest = await testFirebaseConnection();
+        console.log('Connection test result:', connectionTest);
+        
+        if (!connectionTest.success) {
+          toast({
+            title: "Firebase Connection Error",
+            description: "Unable to connect to Firebase. Please check your configuration.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        await Promise.all([
+          loadEvents(),
+          loadMembers(),
+          loadUsers(),
+          loadJoinApplications()
+        ]);
+      } catch (error) {
+        console.error('Error initializing data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load data. Please refresh the page.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    initializeData();
   }, []);
 
   const loadUsers = async () => {
-    const allUsers = await userService.getUsers();
-    setUsers(allUsers);
+    const result = await getUsers();
+    if (result.success) {
+      setUsers(result.users as User[]);
+    }
+  };
+
+  const loadEvents = async () => {
+    console.log('Loading events...');
+    const result = await getEvents();
+    console.log('Events load result:', result);
+    if (result.success) {
+      setEvents(result.events as Event[]);
+      console.log('Events set successfully:', result.events?.length);
+    } else {
+      console.error('Failed to load events:', result.error);
+    }
+  };
+
+  const loadMembers = async () => {
+    console.log('Loading members...');
+    const result = await getMembers();
+    console.log('Members load result:', result);
+    if (result.success) {
+      setMembers(result.members as Member[]);
+      console.log('Members set successfully:', result.members?.length);
+    } else {
+      console.error('Failed to load members:', result.error);
+    }
   };
 
   const loadJoinApplications = async () => {
-    const allApplications = await joinApplicationService.getJoinApplications();
-    setJoinApplications(allApplications);
+    try {
+      console.log('🔄 Loading join applications...');
+      
+      // Load all applications
+      const allResult = await getJoinApplications();
+      console.log('📋 All applications result:', allResult);
+      if (allResult.success) {
+        setJoinApplications(allResult.applications as JoinApplication[]);
+        console.log('✅ All applications loaded:', allResult.applications?.length);
+      } else {
+        console.error('❌ Failed to load all applications:', allResult.error);
+      }
+      
+      // Load approved applications
+      const approvedResult = await getApprovedApplications();
+      console.log('✅ Approved applications result:', approvedResult);
+      if (approvedResult.success) {
+        setApprovedApplications(approvedResult.applications as JoinApplication[]);
+        console.log('✅ Approved applications loaded:', approvedResult.applications?.length);
+      } else {
+        console.error('❌ Failed to load approved applications:', approvedResult.error);
+      }
+      
+      // Load pending applications
+      const pendingResult = await getPendingApplications();
+      console.log('⏳ Pending applications result:', pendingResult);
+      if (pendingResult.success) {
+        setPendingApplications(pendingResult.applications as JoinApplication[]);
+        console.log('✅ Pending applications loaded:', pendingResult.applications?.length);
+      } else {
+        console.error('❌ Failed to load pending applications:', pendingResult.error);
+      }
+    } catch (error) {
+      console.error('❌ Error loading join applications:', error);
+    }
   };
 
   // Event management functions
   const addEvent = () => {
     const newEvent: Event = {
-      id: Date.now().toString(),
+      id: "", // Let Firestore generate the ID
       title: "",
       description: "",
       frequency: "",
       time: "",
       location: "",
       tags: [],
-      date: ""
+      date: "",
+      image: "",
+      registrationLink: ""
     };
     setEditingEvent(newEvent);
     setIsEventDialogOpen(true);
@@ -69,17 +205,33 @@ const Admin = () => {
     setIsEventDialogOpen(true);
   };
 
-  const deleteEvent = (id: string) => {
-    const updatedEvents = events.filter(event => event.id !== id);
-    setEvents(updatedEvents);
-    saveEvents(updatedEvents);
-    toast({
-      title: "Event deleted",
-      description: "The event has been successfully deleted.",
-    });
+  const deleteEventHandler = async (id: string) => {
+    try {
+      const result = await deleteEvent(id);
+      if (result.success) {
+        await loadEvents(); // Reload events from Firebase
+        toast({
+          title: "Event deleted",
+          description: "The event has been successfully deleted.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to delete event",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const saveEvent = () => {
+  const saveEvent = async () => {
+    console.log('Saving event...', editingEvent);
     if (!editingEvent) return;
     
     if (!editingEvent.title || !editingEvent.description) {
@@ -91,31 +243,62 @@ const Admin = () => {
       return;
     }
 
-    let updatedEvents: Event[];
-    if (editingEvent.id && events.find(e => e.id === editingEvent.id)) {
-      // Update existing event
-      updatedEvents = events.map(event => 
-        event.id === editingEvent.id ? editingEvent : event
-      );
-    } else {
-      // Add new event
-      updatedEvents = [...events, editingEvent];
+    try {
+      if (editingEvent.id && editingEvent.id !== "" && events.find(e => e.id === editingEvent.id)) {
+        // Update existing event
+        console.log('Updating existing event with ID:', editingEvent.id);
+        const result = await updateEvent(editingEvent.id, editingEvent);
+        console.log('Update result:', result);
+        if (result.success) {
+          await loadEvents(); // Reload events from Firebase
+          setIsEventDialogOpen(false);
+          setEditingEvent(null);
+          toast({
+            title: "Event updated",
+            description: "The event has been successfully updated.",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: result.error || "Failed to update event",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Add new event
+        console.log('Creating new event...');
+        const result = await createEvent(editingEvent);
+        console.log('Create result:', result);
+        if (result.success) {
+          await loadEvents(); // Reload events from Firebase
+          setIsEventDialogOpen(false);
+          setEditingEvent(null);
+          toast({
+            title: "Event created",
+            description: "The event has been successfully created.",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: result.error || "Failed to create event",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error in saveEvent:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
     }
-
-    setEvents(updatedEvents);
-    saveEvents(updatedEvents);
-    setIsEventDialogOpen(false);
-    setEditingEvent(null);
-    toast({
-      title: "Event saved",
-      description: "The event has been successfully saved.",
-    });
   };
 
   // Member management functions
   const addMember = () => {
     const newMember: Member = {
-      id: Date.now().toString(),
+      id: "", // Let Firestore generate the ID
       name: "",
       role: "",
       department: "",
@@ -133,17 +316,32 @@ const Admin = () => {
     setIsMemberDialogOpen(true);
   };
 
-  const deleteMember = (id: string) => {
-    const updatedMembers = members.filter(member => member.id !== id);
-    setMembers(updatedMembers);
-    saveMembers(updatedMembers);
-    toast({
-      title: "Member deleted",
-      description: "The member has been successfully deleted.",
-    });
+  const deleteMemberHandler = async (id: string) => {
+    try {
+      const result = await deleteMember(id);
+      if (result.success) {
+        await loadMembers(); // Reload members from Firebase
+        toast({
+          title: "Member deleted",
+          description: "The member has been successfully deleted.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to delete member",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const saveMember = () => {
+  const saveMember = async () => {
     if (!editingMember) return;
     
     if (!editingMember.name || !editingMember.role) {
@@ -155,25 +353,52 @@ const Admin = () => {
       return;
     }
 
-    let updatedMembers: Member[];
-    if (editingMember.id && members.find(m => m.id === editingMember.id)) {
-      // Update existing member
-      updatedMembers = members.map(member => 
-        member.id === editingMember.id ? editingMember : member
-      );
-    } else {
-      // Add new member
-      updatedMembers = [...members, editingMember];
+    try {
+      if (editingMember.id && editingMember.id !== "" && members.find(m => m.id === editingMember.id)) {
+        // Update existing member
+        console.log('Updating existing member with ID:', editingMember.id);
+        const result = await updateMember(editingMember.id, editingMember);
+        if (result.success) {
+          await loadMembers(); // Reload members from Firebase
+          setIsMemberDialogOpen(false);
+          setEditingMember(null);
+          toast({
+            title: "Member updated",
+            description: "The member has been successfully updated.",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: result.error || "Failed to update member",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Add new member
+        const result = await createMember(editingMember);
+        if (result.success) {
+          await loadMembers(); // Reload members from Firebase
+          setIsMemberDialogOpen(false);
+          setEditingMember(null);
+          toast({
+            title: "Member created",
+            description: "The member has been successfully created.",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: result.error || "Failed to create member",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
     }
-
-    setMembers(updatedMembers);
-    saveMembers(updatedMembers);
-    setIsMemberDialogOpen(false);
-    setEditingMember(null);
-    toast({
-      title: "Member saved",
-      description: "The member has been successfully saved.",
-    });
   };
 
   const addTag = (tags: string[], newTag: string, setTags: (tags: string[]) => void) => {
@@ -210,14 +435,24 @@ const Admin = () => {
                 Manage events and members for Code Nerds
               </p>
             </div>
-            <Button
-              onClick={() => navigate('/')}
-              variant="outline"
-              className="border-accent text-accent hover:bg-accent hover:text-accent-foreground"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Back to Home
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => navigate('/')}
+                variant="outline"
+                className="border-accent text-accent hover:bg-accent hover:text-accent-foreground"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
 
           {/* Navigation Menu */}
@@ -258,19 +493,23 @@ const Admin = () => {
               <span className="text-sm font-medium">Join Applications</span>
             </Button>
             
-            <Button
-              variant="outline"
-              className="h-auto py-4 px-6 flex flex-col items-center gap-2 opacity-50 cursor-not-allowed"
-              disabled
-            >
-              <Settings className="w-6 h-6" />
-              <span className="text-sm font-medium">Settings</span>
-            </Button>
+            
           </div>
         </div>
 
-        {/* Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                 {/* Loading State */}
+         {loading && (
+           <div className="flex items-center justify-center py-20">
+             <div className="flex items-center gap-2">
+               <Loader2 className="w-6 h-6 animate-spin" />
+               <span className="text-lg">Loading data...</span>
+             </div>
+           </div>
+         )}
+
+         {/* Content Tabs */}
+         {!loading && (
+           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="events" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -326,7 +565,7 @@ const Admin = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => deleteEvent(event.id)}
+                          onClick={() => deleteEventHandler(event.id)}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -349,12 +588,25 @@ const Admin = () => {
                         <MapPin className="w-4 h-4 text-accent" />
                         <span>{event.location}</span>
                       </div>
-                      {event.date && (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-accent" />
-                          <span>{event.date}</span>
-                        </div>
-                      )}
+                                             {event.date && (
+                         <div className="flex items-center gap-2">
+                           <Calendar className="w-4 h-4 text-accent" />
+                           <span>{event.date}</span>
+                         </div>
+                       )}
+                       {event.registrationLink && (
+                         <div className="flex items-center gap-2">
+                           <MapPin className="w-4 h-4 text-accent" />
+                           <a 
+                             href={event.registrationLink} 
+                             target="_blank" 
+                             rel="noopener noreferrer"
+                             className="text-blue-600 hover:underline"
+                           >
+                             Registration Link
+                           </a>
+                         </div>
+                       )}
                     </div>
                   </CardContent>
                 </Card>
@@ -399,7 +651,7 @@ const Admin = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => deleteMember(member.id)}
+                          onClick={() => deleteMemberHandler(member.id)}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -472,12 +724,12 @@ const Admin = () => {
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            const result = await userService.deleteUser(user.id);
+                            const result = await deleteUser(user.id);
                             if (result.success) {
-                              toast({ title: "User deleted", description: result.message });
+                              toast({ title: "User deleted", description: "User deleted successfully" });
                               loadUsers();
                             } else {
-                              toast({ title: "Error", description: result.message, variant: "destructive" });
+                              toast({ title: "Error", description: result.error || "Failed to delete user", variant: "destructive" });
                             }
                           }}
                           className="text-destructive hover:text-destructive"
@@ -510,83 +762,182 @@ const Admin = () => {
               <h2 className="text-2xl font-semibold">Join Applications</h2>
             </div>
 
-            <div className="grid gap-6">
-              {joinApplications.map((application) => (
-                <Card key={application.id} className="tech-border">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-xl mb-2">{application.firstName} {application.lastName}</CardTitle>
-                        <p className="text-accent font-medium mb-2">{application.email}</p>
+            {/* Pending Applications */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold text-amber-600 flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Pending Applications ({pendingApplications.length})
+              </h3>
+              <div className="grid gap-4">
+                {pendingApplications.map((application) => (
+                  <Card key={application.id} className="tech-border border-amber-200 bg-amber-50/30">
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-xl mb-2">{application.firstName} {application.lastName}</CardTitle>
+                          <p className="text-accent font-medium mb-2">{application.email}</p>
+                          <div className="flex gap-2">
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                              Pending Review
+                            </Badge>
+                            <Badge variant="outline">{application.department}</Badge>
+                          </div>
+                        </div>
                         <div className="flex gap-2">
-                          <Badge variant={application.status === 'pending' ? 'secondary' : application.status === 'approved' ? 'default' : 'destructive'}>
-                            {application.status}
-                          </Badge>
-                          <Badge variant="outline">{application.department}</Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingApplication(application);
+                              setIsApplicationDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              const result = await deleteJoinApplication(application.id);
+                              if (result.success) {
+                                toast({ title: "Application deleted", description: "Application deleted successfully" });
+                                loadJoinApplications();
+                              } else {
+                                toast({ title: "Error", description: result.error || "Failed to delete application", variant: "destructive" });
+                              }
+                            }}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingApplication(application);
-                            setIsApplicationDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            const result = await joinApplicationService.deleteJoinApplication(application.id);
-                            if (result.success) {
-                              toast({ title: "Application deleted", description: result.message });
-                              loadJoinApplications();
-                            } else {
-                              toast({ title: "Error", description: result.message, variant: "destructive" });
-                            }
-                          }}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-4 line-clamp-2">{application.motivation}</p>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium">Student ID:</span> {application.studentId}
+                        </div>
+                        <div>
+                          <span className="font-medium">Year:</span> {application.year}
+                        </div>
+                        <div>
+                          <span className="font-medium">Skills:</span> {application.skills.slice(0, 3).join(', ')}
+                          {application.skills.length > 3 && ` +${application.skills.length - 3} more`}
+                        </div>
+                        <div>
+                          <span className="font-medium">Submitted:</span> {new Date(application.submittedAt).toLocaleDateString()}
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground mb-4 line-clamp-2">{application.motivation}</p>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="font-medium">Student ID:</span> {application.studentId}
+                    </CardContent>
+                  </Card>
+                ))}
+                {pendingApplications.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Clock className="w-12 h-12 mx-auto mb-4 text-amber-400" />
+                    <p>No pending applications</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Approved Applications */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold text-green-600 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                Approved Applications ({approvedApplications.length})
+              </h3>
+              <div className="grid gap-4">
+                {approvedApplications.map((application) => (
+                  <Card key={application.id} className="tech-border border-green-200 bg-green-50/30">
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-xl mb-2">{application.firstName} {application.lastName}</CardTitle>
+                          <p className="text-accent font-medium mb-2">{application.email}</p>
+                          <div className="flex gap-2">
+                            <Badge variant="default" className="bg-green-100 text-green-800">
+                              Approved ✅
+                            </Badge>
+                            <Badge variant="outline">{application.department}</Badge>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingApplication(application);
+                              setIsApplicationDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              const result = await deleteJoinApplication(application.id);
+                              if (result.success) {
+                                toast({ title: "Application deleted", description: "Application deleted successfully" });
+                                loadJoinApplications();
+                              } else {
+                                toast({ title: "Error", description: result.error || "Failed to delete application", variant: "destructive" });
+                              }
+                            }}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium">Year:</span> {application.year}
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-4 line-clamp-2">{application.motivation}</p>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium">Student ID:</span> {application.studentId}
+                        </div>
+                        <div>
+                          <span className="font-medium">Year:</span> {application.year}
+                        </div>
+                        <div>
+                          <span className="font-medium">Skills:</span> {application.skills.slice(0, 3).join(', ')}
+                          {application.skills.length > 3 && ` +${application.skills.length - 3} more`}
+                        </div>
+                        <div>
+                          <span className="font-medium">Approved:</span> {new Date(application.reviewedAt).toLocaleDateString()}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium">Skills:</span> {application.skills.slice(0, 3).join(', ')}
-                        {application.skills.length > 3 && ` +${application.skills.length - 3} more`}
-                      </div>
-                      <div>
-                        <span className="font-medium">Submitted:</span> {new Date(application.submittedAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+                {approvedApplications.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-400" />
+                    <p>No approved applications</p>
+                  </div>
+                )}
+              </div>
             </div>
           </TabsContent>
         </Tabs>
+        )}
 
         {/* Event Dialog */}
-        <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingEvent?.id && events.find(e => e.id === editingEvent.id) ? 'Edit Event' : 'Add New Event'}
-              </DialogTitle>
-            </DialogHeader>
+                 <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
+           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+             <DialogHeader>
+               <DialogTitle>
+                 {editingEvent?.id && events.find(e => e.id === editingEvent.id) ? 'Edit Event' : 'Add New Event'}
+               </DialogTitle>
+               <DialogDescription>
+                 {editingEvent?.id && events.find(e => e.id === editingEvent.id) 
+                   ? 'Update the event details below.' 
+                   : 'Fill in the details to create a new event.'}
+               </DialogDescription>
+             </DialogHeader>
             {editingEvent && (
               <div className="space-y-4">
                 <div>
@@ -638,16 +989,26 @@ const Admin = () => {
                       placeholder="e.g., Computer Lab 1"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="event-date">Date</Label>
-                    <Input
-                      id="event-date"
-                      type="date"
-                      value={editingEvent.date || ''}
-                      onChange={(e) => setEditingEvent({ ...editingEvent, date: e.target.value })}
-                    />
-                  </div>
-                </div>
+                                     <div>
+                     <Label htmlFor="event-date">Date</Label>
+                     <Input
+                       id="event-date"
+                       type="date"
+                       value={editingEvent.date || ''}
+                       onChange={(e) => setEditingEvent({ ...editingEvent, date: e.target.value })}
+                     />
+                   </div>
+                 </div>
+                 <div>
+                   <Label htmlFor="event-registration-link">Registration Link</Label>
+                   <Input
+                     id="event-registration-link"
+                     type="url"
+                     value={editingEvent.registrationLink || ''}
+                     onChange={(e) => setEditingEvent({ ...editingEvent, registrationLink: e.target.value })}
+                     placeholder="https://forms.google.com/..."
+                   />
+                 </div>
                 <div>
                   <Label>Tags</Label>
                   <div className="flex flex-wrap gap-2 mb-2">
@@ -690,13 +1051,18 @@ const Admin = () => {
         </Dialog>
 
         {/* Member Dialog */}
-        <Dialog open={isMemberDialogOpen} onOpenChange={setIsMemberDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingMember?.id && members.find(m => m.id === editingMember.id) ? 'Edit Member' : 'Add New Member'}
-              </DialogTitle>
-            </DialogHeader>
+                 <Dialog open={isMemberDialogOpen} onOpenChange={setIsMemberDialogOpen}>
+           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+             <DialogHeader>
+               <DialogTitle>
+                 {editingMember?.id && members.find(m => m.id === editingMember.id) ? 'Edit Member' : 'Add New Member'}
+               </DialogTitle>
+               <DialogDescription>
+                 {editingMember?.id && members.find(m => m.id === editingMember.id) 
+                   ? 'Update the member details below.' 
+                   : 'Fill in the details to add a new member.'}
+               </DialogDescription>
+             </DialogHeader>
             {editingMember && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -830,13 +1196,18 @@ const Admin = () => {
         </Dialog>
 
         {/* User Dialog */}
-        <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {editingUser?.id ? 'Edit User' : 'Add New User'}
-              </DialogTitle>
-            </DialogHeader>
+                 <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+           <DialogContent className="max-w-md">
+             <DialogHeader>
+               <DialogTitle>
+                 {editingUser?.id ? 'Edit User' : 'Add New User'}
+               </DialogTitle>
+               <DialogDescription>
+                 {editingUser?.id 
+                   ? 'Update the user details below.' 
+                   : 'Fill in the details to create a new user.'}
+               </DialogDescription>
+             </DialogHeader>
             {editingUser && (
               <div className="space-y-4">
                 <div>
@@ -883,22 +1254,22 @@ const Admin = () => {
                   </Button>
                   <Button onClick={async () => {
                     if (editingUser.id) {
-                      const result = await userService.updateUser(editingUser.id, editingUser);
+                      const result = await updateUser(editingUser.id, editingUser);
                       if (result.success) {
-                        toast({ title: "User updated", description: result.message });
+                        toast({ title: "User updated", description: "User updated successfully" });
                         setIsUserDialogOpen(false);
                         loadUsers();
                       } else {
-                        toast({ title: "Error", description: result.message, variant: "destructive" });
+                        toast({ title: "Error", description: result.error || "Failed to update user", variant: "destructive" });
                       }
                     } else {
-                      const result = await userService.createUser(editingUser);
+                      const result = await createUser(editingUser);
                       if (result.success) {
-                        toast({ title: "User created", description: result.message });
+                        toast({ title: "User created", description: "User created successfully" });
                         setIsUserDialogOpen(false);
                         loadUsers();
                       } else {
-                        toast({ title: "Error", description: result.message, variant: "destructive" });
+                        toast({ title: "Error", description: result.error || "Failed to create user", variant: "destructive" });
                       }
                     }
                   }} className="bg-gradient-primary hover:opacity-90">
@@ -912,13 +1283,16 @@ const Admin = () => {
         </Dialog>
 
         {/* Application Dialog */}
-        <Dialog open={isApplicationDialogOpen} onOpenChange={setIsApplicationDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                Review Join Application
-              </DialogTitle>
-            </DialogHeader>
+                 <Dialog open={isApplicationDialogOpen} onOpenChange={setIsApplicationDialogOpen}>
+           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+             <DialogHeader>
+               <DialogTitle>
+                 Review Join Application
+               </DialogTitle>
+               <DialogDescription>
+                 Review and update the status of this join application.
+               </DialogDescription>
+             </DialogHeader>
             {editingApplication && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -986,17 +1360,27 @@ const Admin = () => {
                       toast({ title: "Cannot update", description: "Cannot update status to pending. Please select approved or rejected.", variant: "destructive" });
                       return;
                     }
-                    const result = await joinApplicationService.updateJoinApplicationStatus(
+                    const result = await updateJoinApplicationStatus(
                       editingApplication.id,
                       editingApplication.status as 'approved' | 'rejected',
-                      editingApplication.notes
+                      editingApplication.notes || ''
                     );
                     if (result.success) {
-                      toast({ title: "Application updated", description: result.message });
+                      if (editingApplication.status === 'approved') {
+                        toast({ 
+                          title: "Application approved! 🎉", 
+                          description: "Welcome email has been sent to the applicant." 
+                        });
+                      } else {
+                        toast({ 
+                          title: "Application updated", 
+                          description: "Application status updated successfully" 
+                        });
+                      }
                       setIsApplicationDialogOpen(false);
                       loadJoinApplications();
                     } else {
-                      toast({ title: "Error", description: result.message, variant: "destructive" });
+                      toast({ title: "Error", description: result.error || "Failed to update application", variant: "destructive" });
                     }
                   }} className="bg-gradient-primary hover:opacity-90">
                     <Save className="w-4 h-4 mr-2" />
@@ -1005,11 +1389,11 @@ const Admin = () => {
                 </div>
               </div>
             )}
-          </DialogContent>
-        </Dialog>
-      </div>
-    </div>
-  );
-};
+           </DialogContent>
+         </Dialog>
+       </div>
+     </div>
+   );
+ };
 
 export default Admin;
