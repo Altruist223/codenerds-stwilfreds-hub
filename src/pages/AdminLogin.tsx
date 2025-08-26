@@ -155,19 +155,6 @@ const AdminLogin = () => {
           </CardContent>
         </Card>
 
-        {/* Demo Credentials */}
-        <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">
-            Demo Credentials (for testing):
-          </h3>
-          <div className="text-xs text-muted-foreground space-y-1">
-            <p><strong>Email:</strong> admin@codenerds.com</p>
-            <p><strong>Password:</strong> admin123</p>
-            <p className="text-xs mt-2">
-              ⚠️ Replace with your actual Firebase admin credentials
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -426,16 +426,16 @@ const Admin = () => {
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
             <div>
               <h1 className="text-4xl font-bold mb-2">
                 <span className="gradient-text">Admin</span> Dashboard
               </h1>
               <p className="text-muted-foreground text-lg">
-                Manage events and members for Code Nerds
+                Manage events, members, users, and applications for Code Nerds
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => navigate('/')}
                 variant="outline"
@@ -456,11 +456,11 @@ const Admin = () => {
           </div>
 
           {/* Navigation Menu */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <Button
               onClick={() => setActiveTab("events")}
               variant={activeTab === "events" ? "default" : "outline"}
-              className="h-auto py-4 px-6 flex flex-col items-center gap-2"
+              className="h-auto py-4 px-6 flex flex-col items-center gap-2 tech-border hover:tech-glow transition-all"
             >
               <Calendar className="w-6 h-6" />
               <span className="text-sm font-medium">Event Management</span>
@@ -469,7 +469,7 @@ const Admin = () => {
             <Button
               onClick={() => setActiveTab("members")}
               variant={activeTab === "members" ? "default" : "outline"}
-              className="h-auto py-4 px-6 flex flex-col items-center gap-2"
+              className="h-auto py-4 px-6 flex flex-col items-center gap-2 tech-border hover:tech-glow transition-all"
             >
               <Users className="w-6 h-6" />
               <span className="text-sm font-medium">Member Management</span>
@@ -478,7 +478,7 @@ const Admin = () => {
             <Button
               onClick={() => setActiveTab("users")}
               variant={activeTab === "users" ? "default" : "outline"}
-              className="h-auto py-4 px-6 flex flex-col items-center gap-2"
+              className="h-auto py-4 px-6 flex flex-col items-center gap-2 tech-border hover:tech-glow transition-all"
             >
               <UserPlus className="w-6 h-6" />
               <span className="text-sm font-medium">User Management</span>
@@ -487,13 +487,11 @@ const Admin = () => {
             <Button
               onClick={() => setActiveTab("applications")}
               variant={activeTab === "applications" ? "default" : "outline"}
-              className="h-auto py-4 px-6 flex flex-col items-center gap-2"
+              className="h-auto py-4 px-6 flex flex-col items-center gap-2 tech-border hover:tech-glow transition-all"
             >
               <FileText className="w-6 h-6" />
               <span className="text-sm font-medium">Join Applications</span>
             </Button>
-            
-            
           </div>
         </div>
 
@@ -510,20 +508,20 @@ const Admin = () => {
          {/* Content Tabs */}
          {!loading && (
            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="events" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-4 tech-border">
+            <TabsTrigger value="events" className="flex items-center gap-2 py-3">
               <Calendar className="w-4 h-4" />
               Events
             </TabsTrigger>
-            <TabsTrigger value="members" className="flex items-center gap-2">
+            <TabsTrigger value="members" className="flex items-center gap-2 py-3">
               <Users className="w-4 h-4" />
               Members
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
+            <TabsTrigger value="users" className="flex items-center gap-2 py-3">
               <UserPlus className="w-4 h-4" />
               Users
             </TabsTrigger>
-            <TabsTrigger value="applications" className="flex items-center gap-2">
+            <TabsTrigger value="applications" className="flex items-center gap-2 py-3">
               <FileText className="w-4 h-4" />
               Applications
             </TabsTrigger>
@@ -531,8 +529,11 @@ const Admin = () => {
 
           {/* Events Tab */}
           <TabsContent value="events" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-semibold">Events</h2>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold">Events</h2>
+                <p className="text-muted-foreground">Manage all club events and activities</p>
+              </div>
               <Button onClick={addEvent} className="bg-gradient-primary hover:opacity-90">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Event
@@ -616,8 +617,11 @@ const Admin = () => {
 
           {/* Members Tab */}
           <TabsContent value="members" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-semibold">Members</h2>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold">Members</h2>
+                <p className="text-muted-foreground">Manage club members and their information</p>
+              </div>
               <Button onClick={addMember} className="bg-gradient-primary hover:opacity-90">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Member
@@ -682,8 +686,11 @@ const Admin = () => {
 
           {/* Users Tab */}
           <TabsContent value="users" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-semibold">Users</h2>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold">Users</h2>
+                <p className="text-muted-foreground">Manage admin users and their permissions</p>
+              </div>
               <Button onClick={() => {
                 setEditingUser({ id: '', email: '', role: 'member', status: 'active', createdAt: new Date().toISOString() });
                 setIsUserDialogOpen(true);
@@ -758,8 +765,11 @@ const Admin = () => {
 
           {/* Applications Tab */}
           <TabsContent value="applications" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-semibold">Join Applications</h2>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold">Join Applications</h2>
+                <p className="text-muted-foreground">Review and manage membership applications</p>
+              </div>
             </div>
 
             {/* Pending Applications */}

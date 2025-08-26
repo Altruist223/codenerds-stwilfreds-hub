@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp, where, getDoc } from 'firebase/firestore';
+import { sanitizeUserData } from './utils';
+import { sendContactEmail, sendEmailViaMailto } from './email';
 
 // Firebase configuration - Use environment variables
 const firebaseConfig = {
@@ -40,8 +42,11 @@ export const signOutUser = async () => {
 // Firestore functions for join applications
 export const submitJoinApplication = async (applicationData: any) => {
   try {
+    // Sanitize user input before storing
+    const sanitizedData = sanitizeUserData(applicationData);
+    
     const docRef = await addDoc(collection(db, 'joinApplications'), {
-      ...applicationData,
+      ...sanitizedData,
       status: 'pending',
       submittedAt: serverTimestamp(),
       reviewedAt: null,
@@ -140,74 +145,48 @@ export const updateJoinApplicationStatus = async (id: string, status: string, no
 // Function to send welcome email
 const sendWelcomeEmail = async (applicationData: any) => {
   try {
-    const { firstName, lastName, email } = applicationData;
+    // Sanitize user input before using in email
+    const sanitizedData = sanitizeUserData(applicationData);
+    const { firstName, lastName, email } = sanitizedData;
     const fullName = `${firstName} ${lastName}`;
     
-    // Create email content
-    const emailContent = {
-      to: email,
+    // Create email data for our email utility
+    const emailData = {
+      from_name: "Code Nerds Team",
+      from_email: "codenerdsswpg@gmail.com",
+      to_email: email,
       subject: 'Welcome to Code Nerds Community! 🎉',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; color: white;">
-            <h1 style="margin: 0; font-size: 28px;">Welcome to Code Nerds! 🚀</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Your application has been approved!</p>
-          </div>
-          
-          <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
-            <h2 style="color: #333; margin-top: 0;">Congratulations, ${fullName}! 🎊</h2>
-            
-            <p style="color: #555; line-height: 1.6;">
-              We're excited to welcome you to the Code Nerds community! Your application has been reviewed and approved.
-            </p>
-            
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
-              <h3 style="color: #667eea; margin-top: 0;">What's Next?</h3>
-              <ul style="color: #555; line-height: 1.6;">
-                <li>Join our community discussions</li>
-                <li>Participate in upcoming events</li>
-                <li>Connect with fellow developers</li>
-                <li>Share your knowledge and learn from others</li>
-              </ul>
-            </div>
-            
-            <p style="color: #555; line-height: 1.6;">
-              We'll be in touch soon with more details about getting started and upcoming community activities.
-            </p>
-            
-            <div style="text-align: center; margin-top: 30px;">
-              <a href="mailto:codenerdsswpg@gmail.com" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                Contact Us
-              </a>
-            </div>
-          </div>
-          
-          <div style="text-align: center; margin-top: 20px; color: #888; font-size: 14px;">
-            <p>Code Nerds Community Hub</p>
-            <p>Building the future, one line of code at a time 💻</p>
-          </div>
-        </div>
+      message: `
+        Congratulations, ${fullName}! 🎊
+        
+        We're excited to welcome you to the Code Nerds community! Your application has been reviewed and approved.
+        
+        What's Next?
+        - Join our community discussions
+        - Participate in upcoming events
+        - Connect with fellow developers
+        - Share your knowledge and learn from others
+        
+        We'll be in touch soon with more details about getting started and upcoming community activities.
+        
+        If you have any questions, feel free to reach out to us at codenerdsswpg@gmail.com
+        
+        Best regards,
+        Code Nerds Team
+        Building the future, one line of code at a time 💻
       `
     };
     
-    // For now, we'll use a simple mailto link approach
-    // In production, integrate with email services like SendGrid, Mailgun, or AWS SES
-    const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(emailContent.subject)}&body=${encodeURIComponent(emailContent.html.replace(/<[^>]*>/g, ''))}`;
+    // Try to send email via our email utility
+    const emailSent = await sendContactEmail(emailData);
     
-    // Log the email details for now
-    console.log('🎉 Welcome email prepared for:', email);
-    console.log('📧 Email subject:', emailContent.subject);
-    console.log('📝 Email content length:', emailContent.html.length, 'characters');
-    
-    // TODO: Integrate with email service
-    // Example with SendGrid:
-    // const response = await fetch('/api/send-email', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(emailContent)
-    // });
-    
-    return { success: true, message: 'Welcome email prepared and ready to send' };
+    if (emailSent) {
+      return { success: true, message: 'Welcome email sent successfully' };
+    } else {
+      // Fallback to mailto if EmailJS fails
+      sendEmailViaMailto(emailData);
+      return { success: true, message: 'Welcome email prepared and ready to send' };
+    }
   } catch (error: any) {
     console.error('❌ Error sending welcome email:', error);
     return { success: false, error: error.message };
@@ -227,8 +206,11 @@ export const deleteJoinApplication = async (id: string) => {
 export const createUser = async (userData: any) => {
   try {
     console.log('Creating user with data:', userData);
+    // Sanitize user input before storing
+    const sanitizedData = sanitizeUserData(userData);
+    
     // Remove the id field if it exists, as Firestore will generate its own
-    const { id, ...userDataWithoutId } = userData;
+    const { id, ...userDataWithoutId } = sanitizedData;
     const docRef = await addDoc(collection(db, 'users'), {
       ...userDataWithoutId,
       createdAt: serverTimestamp(),
@@ -258,8 +240,11 @@ export const getUsers = async () => {
 
 export const updateUser = async (id: string, userData: any) => {
   try {
+    // Sanitize user input before storing
+    const sanitizedData = sanitizeUserData(userData);
+    
     const docRef = doc(db, 'users', id);
-    await updateDoc(docRef, userData);
+    await updateDoc(docRef, sanitizedData);
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -279,8 +264,11 @@ export const deleteUser = async (id: string) => {
 export const createEvent = async (eventData: any) => {
   try {
     console.log('Creating event with data:', eventData);
+    // Sanitize user input before storing
+    const sanitizedData = sanitizeUserData(eventData);
+    
     // Remove the id field if it exists, as Firestore will generate its own
-    const { id, ...eventDataWithoutId } = eventData;
+    const { id, ...eventDataWithoutId } = sanitizedData;
     const docRef = await addDoc(collection(db, 'events'), {
       ...eventDataWithoutId,
       createdAt: serverTimestamp(),
@@ -324,9 +312,12 @@ export const getEvents = async () => {
 export const updateEvent = async (id: string, eventData: any) => {
   try {
     console.log('Updating event with ID:', id, 'Data:', eventData);
+    // Sanitize user input before storing
+    const sanitizedData = sanitizeUserData(eventData);
+    
     const docRef = doc(db, 'events', id);
     await updateDoc(docRef, {
-      ...eventData,
+      ...sanitizedData,
       updatedAt: serverTimestamp()
     });
     console.log('Event updated successfully');
@@ -363,8 +354,11 @@ export const deleteEvent = async (id: string) => {
 export const createMember = async (memberData: any) => {
   try {
     console.log('Creating member with data:', memberData);
+    // Sanitize user input before storing
+    const sanitizedData = sanitizeUserData(memberData);
+    
     // Remove the id field if it exists, as Firestore will generate its own
-    const { id, ...memberDataWithoutId } = memberData;
+    const { id, ...memberDataWithoutId } = sanitizedData;
     const docRef = await addDoc(collection(db, 'members'), {
       ...memberDataWithoutId,
       createdAt: serverTimestamp(),
@@ -408,9 +402,12 @@ export const getMembers = async () => {
 export const updateMember = async (id: string, memberData: any) => {
   try {
     console.log('Updating member with ID:', id, 'Data:', memberData);
+    // Sanitize user input before storing
+    const sanitizedData = sanitizeUserData(memberData);
+    
     const docRef = doc(db, 'members', id);
     await updateDoc(docRef, {
-      ...memberData,
+      ...sanitizedData,
       updatedAt: serverTimestamp()
     });
     console.log('Member updated successfully');

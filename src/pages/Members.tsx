@@ -8,8 +8,11 @@ import { Member } from "@/lib/data";
 import { getMembers } from "@/lib/firebase";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { useNavigate } from "react-router-dom";
+import { sanitizeUrl } from "@/lib/utils";
 
 const Members = () => {
+  const navigate = useNavigate();
   const [members, setMembers] = useState<Member[]>([]);
   const [filteredMembers, setFilteredMembers] = useState<Member[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -244,19 +247,35 @@ const Members = () => {
                       {/* Social Links */}
                       <div className="flex justify-center gap-3 mb-4">
                         {member.social?.github && (
-                          <div className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer group-hover:scale-110 transition-transform">
+                          <a
+                            href={sanitizeUrl(member.social.github)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer group-hover:scale-110 transition-transform"
+                            title={`View ${member.name}'s GitHub profile`}
+                          >
                             <Github className="w-4 h-4" />
-                          </div>
+                          </a>
                         )}
                         {member.social?.linkedin && (
-                          <div className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer group-hover:scale-110 transition-transform">
+                          <a
+                            href={sanitizeUrl(member.social.linkedin)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer group-hover:scale-110 transition-transform"
+                            title={`View ${member.name}'s LinkedIn profile`}
+                          >
                             <Linkedin className="w-4 h-4" />
-                          </div>
+                          </a>
                         )}
                         {member.social?.email && (
-                          <div className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer group-hover:scale-110 transition-transform">
+                          <a
+                            href={`mailto:${member.social.email}`}
+                            className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer group-hover:scale-110 transition-transform"
+                            title={`Send email to ${member.name}`}
+                          >
                             <Mail className="w-4 h-4" />
-                          </div>
+                          </a>
                         )}
                       </div>
 

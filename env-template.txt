@@ -1,11 +1,11 @@
 # Firebase Configuration
-VITE_FIREBASE_API_KEY=your-api-key-here
-VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-VITE_FIREBASE_APP_ID=your-app-id
-VITE_FIREBASE_MEASUREMENT_ID=your-measurement-id
+  apiKey: "AIzaSyASjJpwGyVpJ8LOcFtPP5Rl5cNp8D37U88",
+  authDomain: "codenerds-35772.firebaseapp.com",
+  projectId: "codenerds-35772",
+  storageBucket: "codenerds-35772.firebasestorage.app",
+  messagingSenderId: "114640648409",
+  appId: "1:114640648409:web:62c35885ab3a104f90a6c8",
+  measurementId: "G-KD2BSKHG70"
 
 # Application Configuration
 VITE_APP_NAME=Code Nerds Community Hub

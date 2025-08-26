@@ -7,6 +7,7 @@ import { Mail, MapPin, Phone, Clock, Send, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { ContactFormData } from "@/lib/api";
+import { sendContactEmail, sendEmailViaMailto } from "@/lib/email";
 
 const Contact = () => {
   const [formData, setFormData] = useState<ContactFormData>({
@@ -39,29 +40,61 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      // Create mailto link for contact form
-      const mailtoLink = `mailto:codenerdsswpg@gmail.com?subject=${encodeURIComponent(formData.subject || 'Contact from Code Nerds')}&body=${encodeURIComponent(
-        `Name: ${formData.firstName} ${formData.lastName}\nEmail: ${formData.email}\nDepartment: ${formData.department}\n\nMessage:\n${formData.message}`
-      )}`;
+      // Send email using our email utility
+      const emailData = {
+        from_name: `${formData.firstName} ${formData.lastName}`,
+        from_email: formData.email,
+        department: formData.department,
+        message: formData.message,
+        to_email: 'codenerdsswpg@gmail.com'
+      };
       
-      // Open default email client
-      window.open(mailtoLink, '_blank');
-      
-      toast({
-        title: "Email Client Opened",
-        description: "Your email client has opened with the message. Please send it manually.",
-      });
-      
-      // Reset form
-      setFormData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        department: "",
-        message: ""
-      });
-
+      try {
+        // Try to send email via EmailJS first
+        const emailSent = await sendContactEmail(emailData);
+        
+        if (emailSent) {
+          toast({
+            title: "Message Sent!",
+            description: "Thank you for your message. We'll get back to you soon.",
+          });
+        } else {
+          // Fallback to mailto if EmailJS fails
+          sendEmailViaMailto(emailData);
+          toast({
+            title: "Email Client Opened",
+            description: "Your email client has opened with the message. Please send it manually.",
+          });
+        }
+        
+        // Reset form
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          department: "",
+          message: ""
+        });
+      } catch (error) {
+        console.error('Email error:', error);
+        // Fallback to mailto if there's an error
+        sendEmailViaMailto(emailData);
+        toast({
+          title: "Email Client Opened",
+          description: "Your email client has opened with the message. Please send it manually.",
+        });
+        
+        // Reset form
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          department: "",
+          message: ""
+        });
+      }
     } catch (error) {
+      console.error('General error:', error);
       toast({
         title: "Error",
         description: "There was an error sending your message. Please try again.",
@@ -137,7 +170,7 @@ const Contact = () => {
                     Department
                   </label>
                   <Input 
-                    placeholder="Computer Science Engineering" 
+                    placeholder="Computer Science Department" 
                     className="bg-background border-border"
                     value={formData.department}
                     onChange={(e) => handleInputChange("department", e.target.value)}
@@ -202,7 +235,7 @@ const Contact = () => {
                     </div>
                     <div>
                       <p className="font-medium text-foreground">Email</p>
-                      <p className="text-muted-foreground">codenerds@stwilfred.edu</p>
+                      <p className="text-muted-foreground">codenerdsswpg@gmail.com</p>
                     </div>
                   </div>
                   
@@ -212,7 +245,7 @@ const Contact = () => {
                     </div>
                     <div>
                       <p className="font-medium text-foreground">Phone</p>
-                      <p className="text-muted-foreground">+91 98765 43210</p>
+                      <p className="text-muted-foreground">+91 89498 83916</p>
                     </div>
                   </div>
                   
@@ -239,7 +272,7 @@ const Contact = () => {
                 <div className="bg-gradient-accent/10 border border-accent/20 rounded-lg p-4 mb-4">
                   <p className="font-medium text-foreground">Next Meetup</p>
                   <p className="text-accent">Saturday, 2:00 PM</p>
-                  <p className="text-sm text-muted-foreground">Computer Lab 1, Main Building</p>
+                  <p className="text-sm text-muted-foreground">Room 206, Computer Science Department</p>
                 </div>
                 
                 <Button 

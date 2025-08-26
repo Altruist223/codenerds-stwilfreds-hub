@@ -6,6 +6,7 @@ import { Github, Linkedin, Mail, ArrowRight } from "lucide-react";
 import { Member } from "@/lib/data";
 import { getMembers } from "@/lib/firebase";
 import { useNavigate } from "react-router-dom";
+import { sanitizeUrl } from "@/lib/utils";
 
 const Leadership = () => {
   const [leaders, setLeaders] = useState<Member[]>([]);
@@ -71,19 +72,35 @@ const Leadership = () => {
                 {/* Social Links */}
                 <div className="flex justify-center gap-3">
                   {leader.social?.github && (
-                    <div className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+                    <a
+                      href={sanitizeUrl(leader.social.github)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                      title={`View ${leader.name}'s GitHub profile`}
+                    >
                       <Github className="w-4 h-4" />
-                    </div>
+                    </a>
                   )}
                   {leader.social?.linkedin && (
-                    <div className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+                    <a
+                      href={sanitizeUrl(leader.social.linkedin)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                      title={`View ${leader.name}'s LinkedIn profile`}
+                    >
                       <Linkedin className="w-4 h-4" />
-                    </div>
+                    </a>
                   )}
                   {leader.social?.email && (
-                    <div className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+                    <a
+                      href={`mailto:${leader.social.email}`}
+                      className="p-2 bg-secondary/50 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                      title={`Send email to ${leader.name}`}
+                    >
                       <Mail className="w-4 h-4" />
-                    </div>
+                    </a>
                   )}
                 </div>
               </CardContent>

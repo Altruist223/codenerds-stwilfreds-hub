@@ -165,4 +165,32 @@ All colors MUST be HSL.
     border: 1px solid hsl(var(--border));
     background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--card) / 0.8));
   }
+  
+  @keyframes spam {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+    100% {
+      opacity: 0.7;
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes fadeOut {
+    0% {
+      opacity: 0.7;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  
+  .animate-spam {
+    animation: spam 0.5s ease-out forwards, fadeOut 0.5s ease-in 2.5s forwards;
+  }
 }
