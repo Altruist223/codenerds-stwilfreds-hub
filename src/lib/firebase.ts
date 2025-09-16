@@ -1,43 +1,179 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp, where, getDoc } from 'firebase/firestore';
+import { 
+  FirebaseApp, 
+  initializeApp 
+} from 'firebase/app';
+import { 
+  getAuth, 
+  signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword, 
+  signOut as firebaseSignOut, 
+  onAuthStateChanged as firebaseOnAuthStateChanged,
+  User as FirebaseUser,
+  Auth,
+  AuthError as FirebaseAuthError
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  getDoc, 
+  getDocs, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  orderBy, 
+  limit, 
+  startAfter, 
+  QueryDocumentSnapshot, 
+  DocumentData,
+  Firestore,
+  Timestamp
+} from 'firebase/firestore';
+import { 
+  getStorage, 
+  ref, 
+  uploadBytes, 
+  getDownloadURL, 
+  deleteObject, 
+  FirebaseStorage 
+} from 'firebase/storage';
+import { User } from '@/types/firebase';
+import { 
+  BaseApiResponse, 
+  AuthResponse, 
+  ErrorResponse, 
+  UserResponse, 
+  EventResponse, 
+  MemberResponse, 
+  JoinApplicationResponse 
+} from '@/types/api';
 import { sanitizeUserData } from './utils';
 import { sendContactEmail, sendEmailViaMailto } from './email';
 
-// Firebase configuration - Use environment variables
-const firebaseConfig = {
-  apiKey: "AIzaSyASjJpwGyVpJ8LOcFtPP5Rl5cNp8D37U88",
-  authDomain: "codenerds-35772.firebaseapp.com",
-  projectId: "codenerds-35772",
-  storageBucket: "codenerds-35772.firebasestorage.app",
-  messagingSenderId: "114640648409",
-  appId: "1:114640648409:web:62c35885ab3a104f90a6c8",
-  measurementId: "G-KD2BSKHG70"
-};
+import { envConfig } from './env';
+
+// Get Firebase configuration from validated environment variables
+const { firebase: firebaseConfig } = envConfig;
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+const app: FirebaseApp = initializeApp(firebaseConfig);
+const auth: Auth = getAuth(app);
+const db: Firestore = getFirestore(app);
 
-// Authentication functions
-export const signIn = async (email: string, password: string) => {
+// Helper function to handle Firebase Auth errors
+const getAuthError = (error: unknown): ErrorResponse => {
+  const firebaseError = error as FirebaseAuthError;
+  return {
+    success: false,
+    error: {
+      code: firebaseError.code || 'auth/unknown-error',
+      message: firebaseError.message || 'An unknown authentication error occurred',
+    },
+    timestamp: new Date()
+  };
+};
+
+// Sign in with email and password
+export const signIn = async (email: string, password: string): Promise<AuthResponse> => {
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return { success: true, user: userCredential.user };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+    const userCredential = await firebaseSignInWithEmailAndPassword(auth, email, password);
+    const token = await userCredential.user.getIdToken();
+    
+    // Check if user has admin role
+    const idTokenResult = await userCredential.user.getIdTokenResult();
+    const isAdmin = !!idTokenResult.claims.admin;
+    
+    const userResponse: UserResponse = {
+      uid: userCredential.user.uid,
+      email: userCredential.user.email || '',
+      displayName: userCredential.user.displayName || 'Anonymous',
+      photoURL: userCredential.user.photoURL,
+      role: isAdmin ? 'admin' : 'user',
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    };
+    
+    return {
+      success: true,
+      data: {
+        user: userResponse,
+        token,
+        expiresIn: 3600 // Default Firebase token expiration
+      },
+      timestamp: new Date()
+    };
+  } catch (error) {
+    console.error('Sign in error:', error);
+    return getAuthError(error);
   }
 };
 
-export const signOutUser = async () => {
+// Sign out
+export const signOut = async (): Promise<BaseApiResponse> => {
   try {
-    await signOut(auth);
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+    await firebaseSignOut(auth);
+    return { 
+      success: true, 
+      timestamp: new Date() 
+    };
+  } catch (error) {
+    console.error('Sign out error:', error);
+    return getAuthError(error);
   }
 };
+
+// For backward compatibility
+export const signOutUser = signOut;
+
+// Export auth and db instances
+export { auth, db };
+
+// Helper function to convert Firestore document to typed object
+const docToObject = <T extends object>(doc: QueryDocumentSnapshot<DocumentData>): T => {
+  const data = doc.data();
+  // Convert Firestore Timestamps to JavaScript Dates
+  Object.keys(data).forEach(key => {
+    if (data[key] && typeof data[key] === 'object' && 'toDate' in data[key]) {
+      data[key] = (data[key] as { toDate: () => Date }).toDate();
+    }
+  });
+  return { id: doc.id, ...data } as T;
+};
+
+// Helper function to convert Firestore query snapshot to typed array
+const querySnapshotToType = <T extends DocumentData>(
+  querySnap: QuerySnapshot<DocumentData>
+): T[] => querySnap.docs.map(doc => docToType<T>(doc));
+
+// Export the onAuthStateChanged function with proper typing
+export const onAuthStateChanged = (callback: (user: User | null) => void) => {
+  return firebaseOnAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+    if (!firebaseUser) {
+      callback(null);
+      return;
+    }
+    
+    // Convert Firebase User to our User type
+    const user: User = {
+      ...firebaseUser,
+      isAdmin: false
+    };
+    
+    // Check admin status
+    try {
+      const idTokenResult = await firebaseUser.getIdTokenResult();
+      user.isAdmin = !!idTokenResult.claims.admin;
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+    }
+    
+    callback(user);
+  });
+};
+
+// Alias for backward compatibility
+export const onAuthStateChange = onAuthStateChanged;
 
 // Firestore functions for join applications
 export const submitJoinApplication = async (applicationData: any) => {
@@ -438,11 +574,6 @@ export const deleteMember = async (id: string) => {
     });
     return { success: false, error: error.message };
   }
-};
-
-// Auth state listener
-export const onAuthStateChange = (callback: (user: User | null) => void) => {
-  return onAuthStateChanged(auth, callback);
 };
 
 // Test function to check Firebase connection
