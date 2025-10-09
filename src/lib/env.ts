@@ -31,39 +31,35 @@ interface EnvConfig {
 
 /**
  * Validates and returns the environment configuration
- * @throws {Error} If required environment variables are missing
+ * Uses fallback values for development if environment variables are missing
  */
 export function getEnvConfig(): EnvConfig {
   const env = import.meta.env as unknown as EnvVars;
   
-  // List of required environment variables
-  const requiredVars = [
-    'VITE_FIREBASE_API_KEY',
-    'VITE_FIREBASE_AUTH_DOMAIN',
-    'VITE_FIREBASE_PROJECT_ID',
-    'VITE_FIREBASE_STORAGE_BUCKET',
-    'VITE_FIREBASE_MESSAGING_SENDER_ID',
-    'VITE_FIREBASE_APP_ID',
-    'VITE_FIREBASE_MEASUREMENT_ID',
-  ];
+  // Fallback values for development (these should be set in production)
+  const fallbackConfig = {
+    apiKey: "AIzaSyASjJpwGyVpJ8LOcFtPP5Rl5cNp8D37U88",
+    authDomain: "codenerds-35772.firebaseapp.com",
+    projectId: "codenerds-35772",
+    storageBucket: "codenerds-35772.firebasestorage.app",
+    messagingSenderId: "114640648409",
+    appId: "1:114640648409:web:62c35885ab3a104f90a6c8",
+    measurementId: "G-KD2BSKHG70",
+  };
 
-  // Check for missing required variables
-  const missingVars = requiredVars.filter(varName => !env[varName]);
-  
-  if (missingVars.length > 0) {
-    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
-  }
+  // Use environment variables if available, otherwise use fallbacks
+  const firebaseConfig = {
+    apiKey: env.VITE_FIREBASE_API_KEY || fallbackConfig.apiKey,
+    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || fallbackConfig.authDomain,
+    projectId: env.VITE_FIREBASE_PROJECT_ID || fallbackConfig.projectId,
+    storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || fallbackConfig.storageBucket,
+    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || fallbackConfig.messagingSenderId,
+    appId: env.VITE_FIREBASE_APP_ID || fallbackConfig.appId,
+    measurementId: env.VITE_FIREBASE_MEASUREMENT_ID || fallbackConfig.measurementId,
+  };
 
   return {
-    firebase: {
-      apiKey: env.VITE_FIREBASE_API_KEY,
-      authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: env.VITE_FIREBASE_APP_ID,
-      measurementId: env.VITE_FIREBASE_MEASUREMENT_ID,
-    },
+    firebase: firebaseConfig,
     app: {
       name: env.VITE_APP_NAME || 'Code Nerds Hub',
       version: env.VITE_APP_VERSION || '1.0.0',
