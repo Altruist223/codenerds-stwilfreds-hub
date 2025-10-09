@@ -157,10 +157,37 @@ export const onAuthStateChanged = (callback: (user: User | null) => void) => {
       return;
     }
     
-    // Convert Firebase User to our User type
+    // Create a proper User object with bound methods
     const user: User = {
-      ...firebaseUser,
-      isAdmin: false
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      displayName: firebaseUser.displayName,
+      photoURL: firebaseUser.photoURL,
+      phoneNumber: firebaseUser.phoneNumber,
+      providerId: firebaseUser.providerId,
+      emailVerified: firebaseUser.emailVerified,
+      isAnonymous: firebaseUser.isAnonymous,
+      isAdmin: false,
+      metadata: {
+        creationTime: firebaseUser.metadata.creationTime || '',
+        lastSignInTime: firebaseUser.metadata.lastSignInTime || '',
+      },
+      providerData: firebaseUser.providerData.map(pd => ({
+        uid: pd.uid,
+        displayName: pd.displayName,
+        email: pd.email,
+        phoneNumber: pd.phoneNumber,
+        photoURL: pd.photoURL,
+        providerId: pd.providerId,
+      })),
+      refreshToken: firebaseUser.refreshToken,
+      tenantId: firebaseUser.tenantId,
+      // Bind Firebase methods
+      delete: firebaseUser.delete.bind(firebaseUser),
+      getIdToken: firebaseUser.getIdToken.bind(firebaseUser),
+      getIdTokenResult: firebaseUser.getIdTokenResult.bind(firebaseUser),
+      reload: firebaseUser.reload.bind(firebaseUser),
+      toJSON: firebaseUser.toJSON ? firebaseUser.toJSON.bind(firebaseUser) : (() => ({})),
     };
     
     // Check admin status

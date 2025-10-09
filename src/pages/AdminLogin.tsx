@@ -78,13 +78,12 @@ const AdminLogin = () => {
       const result = await signIn(email, password);
       
       if (result.success) {
-        const from = location.state?.from?.pathname || '/admin';
-        navigate(from, { replace: true });
-        
         toast({
           title: 'Login Successful',
           description: 'Welcome to the Admin Dashboard',
         });
+        
+        // Don't navigate here - let the useEffect handle it when isAuthenticated becomes true
       } else {
         toast({
           title: 'Login Failed',

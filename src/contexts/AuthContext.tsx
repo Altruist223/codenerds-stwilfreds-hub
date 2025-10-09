@@ -211,7 +211,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           if (firebaseUser) {
             const currentUser = toUser(firebaseUser);
             setUser(currentUser);
-            checkAdminStatus(firebaseUser).catch(console.error);
+            checkAdminStatus(currentUser).catch(console.error);
           } else {
             setUser(null);
             setIsAdmin(false);
