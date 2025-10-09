@@ -230,10 +230,15 @@ export const getJoinApplications = async () => {
     console.log('🔍 Fetching all join applications...');
     const q = query(collection(db, 'joinApplications'));
     const querySnapshot = await getDocs(q);
-    const applications = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const applications = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Ensure skills is always an array
+        skills: Array.isArray(data.skills) ? data.skills : []
+      };
+    });
     console.log('📋 Found applications:', applications.length);
     return { success: true, applications };
   } catch (error: any) {
@@ -250,10 +255,15 @@ export const getApprovedApplications = async () => {
       where('status', '==', 'approved')
     );
     const querySnapshot = await getDocs(q);
-    const applications = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const applications = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Ensure skills is always an array
+        skills: Array.isArray(data.skills) ? data.skills : []
+      };
+    });
     console.log('✅ Found approved applications:', applications.length);
     return { success: true, applications };
   } catch (error: any) {
@@ -270,10 +280,15 @@ export const getPendingApplications = async () => {
       where('status', '==', 'pending')
     );
     const querySnapshot = await getDocs(q);
-    const applications = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const applications = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Ensure skills is always an array
+        skills: Array.isArray(data.skills) ? data.skills : []
+      };
+    });
     console.log('⏳ Found pending applications:', applications.length);
     return { success: true, applications };
   } catch (error: any) {

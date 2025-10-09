@@ -833,8 +833,8 @@ const Admin = () => {
                           <span className="font-medium">Year:</span> {application.year}
                         </div>
                         <div>
-                          <span className="font-medium">Skills:</span> {application.skills.slice(0, 3).join(', ')}
-                          {application.skills.length > 3 && ` +${application.skills.length - 3} more`}
+                          <span className="font-medium">Skills:</span> {Array.isArray(application.skills) ? application.skills.slice(0, 3).join(', ') : 'No skills listed'}
+                          {Array.isArray(application.skills) && application.skills.length > 3 && ` +${application.skills.length - 3} more`}
                         </div>
                         <div>
                           <span className="font-medium">Submitted:</span> {new Date(application.submittedAt).toLocaleDateString()}
@@ -913,8 +913,8 @@ const Admin = () => {
                           <span className="font-medium">Year:</span> {application.year}
                         </div>
                         <div>
-                          <span className="font-medium">Skills:</span> {application.skills.slice(0, 3).join(', ')}
-                          {application.skills.length > 3 && ` +${application.skills.length - 3} more`}
+                          <span className="font-medium">Skills:</span> {Array.isArray(application.skills) ? application.skills.slice(0, 3).join(', ') : 'No skills listed'}
+                          {Array.isArray(application.skills) && application.skills.length > 3 && ` +${application.skills.length - 3} more`}
                         </div>
                         <div>
                           <span className="font-medium">Approved:</span> {new Date(application.reviewedAt).toLocaleDateString()}
@@ -1332,9 +1332,11 @@ const Admin = () => {
                 <div>
                   <Label>Skills</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {editingApplication.skills.map((skill, index) => (
+                    {Array.isArray(editingApplication.skills) ? editingApplication.skills.map((skill, index) => (
                       <Badge key={index} variant="secondary">{skill}</Badge>
-                    ))}
+                    )) : (
+                      <Badge variant="secondary">No skills listed</Badge>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
