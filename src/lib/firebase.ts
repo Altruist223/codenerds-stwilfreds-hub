@@ -20,15 +20,18 @@ import {
   setDoc, 
   updateDoc, 
   deleteDoc, 
+  addDoc,
   query, 
   where, 
   orderBy, 
   limit, 
   startAfter, 
   QueryDocumentSnapshot, 
+  QuerySnapshot,
   DocumentData,
   Firestore,
-  Timestamp
+  Timestamp,
+  serverTimestamp
 } from 'firebase/firestore';
 import { 
   getStorage, 
@@ -144,7 +147,7 @@ const docToObject = <T extends object>(doc: QueryDocumentSnapshot<DocumentData>)
 // Helper function to convert Firestore query snapshot to typed array
 const querySnapshotToType = <T extends DocumentData>(
   querySnap: QuerySnapshot<DocumentData>
-): T[] => querySnap.docs.map(doc => docToType<T>(doc));
+): T[] => querySnap.docs.map(doc => docToObject<T>(doc));
 
 // Export the onAuthStateChanged function with proper typing
 export const onAuthStateChanged = (callback: (user: User | null) => void) => {
