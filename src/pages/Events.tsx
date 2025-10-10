@@ -73,7 +73,11 @@ const Events = () => {
   }, [searchTerm, selectedTags, eventType, events]);
 
   // Get all unique tags from events
-  const allTags = Array.from(new Set(events.flatMap(event => event.tags)));
+  const allTags = Array.from(
+    new Set(
+      events.flatMap(event => (Array.isArray(event.tags) ? event.tags : []))
+    )
+  );
 
   const toggleTag = (tag: string) => {
     setSelectedTags(prev =>
@@ -226,7 +230,7 @@ const Events = () => {
                             {event.title}
                           </CardTitle>
                           <div className="flex flex-wrap gap-2">
-                            {event.tags.map((tag, index) => (
+                            {(Array.isArray(event.tags) ? event.tags : []).map((tag, index) => (
                               <Badge key={index} variant="secondary" className="text-xs bg-accent/10 text-accent border-accent/20">
                                 {tag}
                               </Badge>

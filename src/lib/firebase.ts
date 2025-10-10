@@ -473,10 +473,21 @@ export const getEvents = async () => {
     console.log('Fetching events...');
     const q = query(collection(db, 'events'), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
-    const events = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const events = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      // Normalize tags to always be an array of strings
+      const normalizedTags = Array.isArray((data as any).tags)
+        ? ((data as any).tags as unknown[]).filter((t) => typeof t === 'string')
+        : typeof (data as any).tags === 'string'
+          ? [(data as any).tags as string]
+          : [];
+
+      return {
+        id: doc.id,
+        ...data,
+        tags: normalizedTags,
+      };
+    });
     console.log('Events fetched successfully:', events.length);
     return { success: true, events };
   } catch (error: any) {

@@ -46,7 +46,7 @@ const Activities = () => {
                   {activity.title}
                 </CardTitle>
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {activity.tags.map((tag, tagIndex) => (
+                  {(Array.isArray(activity.tags) ? activity.tags : []).map((tag, tagIndex) => (
                     <Badge key={tagIndex} variant="secondary" className="bg-accent/10 text-accent border-accent/20">
                       {tag}
                     </Badge>
