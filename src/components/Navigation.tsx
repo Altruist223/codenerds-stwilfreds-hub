@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Code, Settings } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const Navigation = () => {
@@ -29,7 +29,11 @@ const Navigation = () => {
           {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="p-2 bg-gradient-primary rounded-lg">
-              <Code className="w-5 h-5 text-primary-foreground" />
+              <img 
+                src="/favicon.png" 
+                alt="Code Nerds Logo" 
+                className="w-5 h-5"
+              />
             </div>
             <span className="font-bold text-xl">
               <span className="gradient-text">Code</span> Nerds
